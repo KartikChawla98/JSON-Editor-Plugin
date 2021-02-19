@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+        <script src="dist/jsoneditor.js"></script>
+        <script src="src/themes/bootstrap3.js"></script>
+    </head>
+    <body>
+        <div>
+            <div id="editor" class="container"></div>
+            <div class='row'>
+                <div class='span6 col-md-6 columns six large-6'>          
+                    <h2>JSON Editor Output</h2>     
+                    <textarea disabled id='output' style='width: 100%; height: 500px; font-family: monospace; color: red'></textarea>
+                </div>
+                <div class='span6 col-md-6 columns six large-6'>
+                    <h2>Final Schema Output</h2>
+                    <textarea disabled id='finalOutput' style='width: 100%; height: 500px; font-family: monospace; color: green'></textarea>
+                </div>
+            </div>
+        </div>
+        <script>
+            (function () {
+                var propertyCount = 0;
+                var isNormalInteger = false;
+                var isEnumInteger = false;
+                const element = document.getElementById('editor');
+                JSONEditor.defaults.languages.en.error_uniqueItems = "Properties should be unique";
+
+                //Validation Errors
+                JSONEditor.defaults.custom_validators.push(function(schema, value, path) {
+                    var errors = [];
+                    if(schema.title==="Minimum Length or Value") {
+                        if(!/^[-+]?\d+$/.test(value)) {
+                            errors.push({
+                                path: path,
+                                property: 'type',
+                                message: 'Please enter an Integer value'
+                        });
+                        }
+                    }
+                    else if(schema.title==="Maximum Length or Value") {
+                        if(!/^[-+]?\d+$/.test(value)) {
+                            errors.push({
+                                path: path,
+                                property: 'type',
+                                message: 'Please enter an Integer value'
+                            });
+                        }
+                    }
+                    else if(schema.title==="Default value") {
+                        if(isNormalInteger && !/^[-+]?\d+$/.test(value)) {
+                            errors.push({
+                                path: path,
+                                property: 'type',
+                                message: 'Please enter an Integer value'
+                            });
+                        }
+                    }
+                    // else if(schema.title==="Value") {
+                    //     if(!/^[-+]?\d+$/.test(value) && isNormalInteger) {
+                    //     errors.push({
+                    //         path: path,
+                    //         property: 'type',
+                    //         message: 'Please enter an Integer value'
+                    //     });
+                    //     }
+                    // }
+                    return errors;
+                });
+
+                const jsoneditor = new JSONEditor(element, {
+                    schema: {
+                        "title": "Plugin",
+                        "type": "object",
+                        "properties": {
+                            "properties": {
+                                "type": "array",
+                                "format": "tabs",
+                                "title": "Properties",
+                                "uniqueItems": "true",
+                                "items": {
+                                    "type": "object",
+                                    "title": "Property",
+                                    "oneOf": [
+                                        {
+                                            "title": "Normal Property",
+                                            "properties": {
+                                                "normalType": {
+                                                    "type": "boolean",
+                                                    "default": "true",
+                                                    "options": {
+                                                        "hidden": "true"
+                                                    }
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "title": "Type of Property",
+                                                    "enum": [
+                                                        "string",
+                                                        "integer"
+                                                    ],
+                                                    "default": "string"
+                                                },
+                                                "format": {
+                                                    "type": "string",
+                                                    "title": "Format of Property",
+                                                    "enum": [
+                                                        "text",
+                                                        "textarea",
+                                                        "number",
+                                                    ],
+                                                    "default": "text"
+                                                },
+                                                "minimum": {
+                                                    "type": "string",
+                                                    "title": "Minimum Length or Value",
+                                                    "default": 1
+                                                },
+                                                "maximum": {
+                                                    "type": "string",
+                                                    "title": "Maximum Length or Value",
+                                                    "default": 10
+                                                },
+                                                "default": {
+                                                    "type": "string",
+                                                    "title": "Default value"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "title": "Dropdown Property",
+                                            "properties": {
+                                                "dropdownType": {
+                                                    "type": "boolean",
+                                                    "default": "true",
+                                                    "options": {
+                                                        "hidden": "true"
+                                                    }
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "title": "Type of Property",
+                                                    "enum": [
+                                                        "string",
+                                                        "integer"
+                                                    ],
+                                                    "default": "string"
+                                                },
+                                                "enum": {
+                                                    "type": "array",
+                                                    "title": "Value Choices",
+                                                    "uniqueItems": "true",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "title": "Value"
+                                                    },
+                                                    "default": [""]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "title": "Date Property",
+                                            "properties": {
+                                                // "minDate": {
+                                                //     "type": "string",
+                                                //     "title": "Minimum Date",
+                                                //     "format": "date"
+                                                // },
+                                                // "maxDate": {
+                                                //     "type": "string",
+                                                //     "title": "Maximum Date",
+                                                //     "format": "date"
+                                                // },
+                                                "dateType": {
+                                                    "type": "boolean",
+                                                    "default": "true",
+                                                    "options": {
+                                                        "hidden": "true"
+                                                    }
+                                                },
+                                                "defaultDate": {
+                                                    "type": "string",
+                                                    "title": "Default Date",
+                                                    "format": "date"
+                                                }
+                                                // "exampleDate": {
+                                                //     "type": "string",
+                                                //     "title": "Example Date",
+                                                //     "format": "date"
+                                                // }
+                                            }
+                                        }
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "title": "Name of Property"
+                                        }
+                                    }
+                                },
+                                "default": 
+                                [
+                                    {
+
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    theme: 'bootstrap3',
+                    no_additional_properties: 'true',
+                    required_by_default: 'true',
+                    disable_collapse: 'true',
+                    disable_edit_json: 'true',
+                    disable_properties: 'true',
+                    disable_array_reorder: 'true',
+                    disable_array_delete_all_rows: 'true',
+                    disable_array_delete_last_row: 'true',
+                    show_errors: 'always'
+                })
+
+                document.body.addEventListener('mousedown', function(event) {
+                    var jsonVal = jsoneditor.getValue();
+                    if (event.target.classList.contains('list-group-item')) {
+                        var pId = parseInt(event.target.children[0].innerHTML.replace('Property ', '')) - 1;
+                        if (jsonVal.properties[pId].type == "integer") isNormalInteger = true;
+                        else isNormalInteger = false;
+                    }
+                    if (event.target.classList.contains('json-editor-btn-add')) {
+                        isNormalInteger = false;
+                    }
+                    if (event.target.classList.contains('json-editor-btn-delete')) {
+                        console.log(jsonVal.properties[jsonVal.properties.length - 2].normalType)
+                        if (jsonVal.properties[jsonVal.properties.length - 2].normalType && jsonVal.properties[jsonVal.properties.length - 2].type == "integer") isNormalInteger = true;
+                        else isNormalInteger = false;
+                    }
+                });
+                document.body.addEventListener('click', function(event) {
+                    var jsonVal = jsoneditor.getValue();
+                    if (event.target.name.includes('[type]')) {
+                        if (event.target.value == "integer") isNormalInteger = true;
+                        else isNormalInteger = false;
+                    }
+                });
+                jsoneditor.on('change', function() {
+                    Array.from(document.getElementsByTagName('select')).forEach(element => {
+                        element.style = '';
+                    });
+                    var json = jsoneditor.getValue();
+                    $output.value = JSON.stringify(json,null,2);
+                    var parseOutput = JSON.parse($output.value);
+                    if (propertyCount != parseOutput.properties.length) {
+                        jsoneditor.getEditor('root.properties.' + (parseOutput.properties.length-1) + '.name').setValue('Property ' + parseOutput.properties.length);
+                        propertyCount = parseOutput.properties.length;
+                    }
+                    var placeholderString = '{"properties":{placeholder}}';
+                    var replacementText = '';
+                    for (var i = 0; i < parseOutput.properties.length; i++) {
+                        replacementText += '"' + parseOutput.properties[i].name;
+                        if (parseOutput.properties[i].dropdownType)
+                        {
+                            replacementText += '":{"type":"' +  parseOutput.properties[i].type;
+                            var placeholderEnumString = '","enum":[placeholderEnum]';
+                            var replacementEnumText = '';
+                            for (var j = 0; j < parseOutput.properties[i].enum.length; j++)
+                            {
+                                if (parseOutput.properties[i].type == 'integer') {
+                                    var parsedNumber = parseInt(parseOutput.properties[i].enum[j]) ? parseInt(parseOutput.properties[i].enum[j]) : 0;
+                                    jsoneditor.getEditor('root.properties.' + i + '.enum.' + j).setValue(parsedNumber);
+                                }
+                                replacementEnumText += '"' + parseOutput.properties[i].enum[j] + '"';
+                                if (j != parseOutput.properties[i].enum.length - 1) replacementEnumText += ',';
+                            }
+                            replacementText += placeholderEnumString.replace("placeholderEnum", replacementEnumText);
+                        }
+                        else if (parseOutput.properties[i].normalType) 
+                        {
+                            replacementText += '":{"type":"' +  parseOutput.properties[i].type + '","format":"' + parseOutput.properties[i].format;
+                            if (parseOutput.properties[i].type == 'integer') {
+                                var errors = jsoneditor.validate();
+                                if (!errors.length) {
+                                    var minNumber = parseInt(parseOutput.properties[i].minimum) ? parseInt(parseOutput.properties[i].minimum) : 0;
+                                    jsoneditor.getEditor('root.properties.' + i + '.minimum').setValue(minNumber);
+                                    var maxNumber = parseInt(parseOutput.properties[i].maximum) >= minNumber ? parseInt(parseOutput.properties[i].maximum) : minNumber + 1;
+                                    jsoneditor.getEditor('root.properties.' + i + '.maximum').setValue(maxNumber);
+                                    var defaultNumber = parseInt(parseOutput.properties[i].default) ? parseInt(parseOutput.properties[i].default) : 0;
+                                    defaultNumber = defaultNumber >= minNumber ? defaultNumber : minNumber;
+                                    defaultNumber = defaultNumber <= maxNumber ? defaultNumber : maxNumber;
+                                    jsoneditor.getEditor('root.properties.' + i + '.default').setValue(defaultNumber);
+                                }
+                                replacementText += '","minimum":"' + parseOutput.properties[i].minimum + '","maximum":"' + parseOutput.properties[i].maximum;
+                            }
+                            else if (parseOutput.properties[i].type == 'string') {
+                                var errors = jsoneditor.validate();
+                                if (!errors.length) {
+                                    var minNumber = parseInt(parseOutput.properties[i].minimum) >= 0 ? parseInt(parseOutput.properties[i].minimum) : 0;
+                                    jsoneditor.getEditor('root.properties.' + i + '.minimum').setValue(minNumber);
+                                    var maxNumber = parseInt(parseOutput.properties[i].maximum) >= parseInt(parseOutput.properties[i].minimum) ? parseInt(parseOutput.properties[i].maximum) : parseInt(parseOutput.properties[i].minimum) + 1;
+                                    jsoneditor.getEditor('root.properties.' + i + '.maximum').setValue(maxNumber);
+                                    // var defaultNumber = parseOutput.properties[i].default;
+                                    // defaultNumber = defaultNumber.length >= minNumber ? defaultNumber : stringGenerator(defaultNumber, minNumber);
+                                    // defaultNumber = defaultNumber.length <= maxNumber ? defaultNumber: defaultNumber.substring(0, maxNumber);
+                                    // jsoneditor.getEditor('root.properties.' + i + '.default').setValue(defaultNumber);
+                                }
+                                replacementText += '","minLength":"' + parseOutput.properties[i].minimum + '","maxLength":"' + parseOutput.properties[i].maximum;
+                            }
+                            replacementText += '","default":"' + parseOutput.properties[i].default + '"';
+                        }
+                        else if (parseOutput.properties[i].dateType)
+                        {
+                            //document.getElementsByName('root[properties][' + i + '][exampleDate]')[0].setAttribute('min', '2021-01-19')
+                            // var maxDate = parseOutput.properties[i].maxDate >= parseOutput.properties[i].minDate ? parseOutput.properties[i].maxDate : parseOutput.properties[i].minDate;
+                            // jsoneditor.getEditor('root.properties.' + i + '.maxDate').setValue(maxDate);
+                            // var defaultDate = parseOutput.properties[i].defaultDate >= parseOutput.properties[i].minDate ? parseOutput.properties[i].defaultDate : parseOutput.properties[i].minDate;
+                            // defaultDate = defaultDate <= parseOutput.properties[i].maxDate ? defaultDate : parseOutput.properties[i].maxDate;
+                            // jsoneditor.getEditor('root.properties.' + i + '.defaultDate').setValue(defaultDate);
+                            // replacementText += '":{"type":"string","format":"date","min":"' + parseOutput.properties[i].minDate + '","max":"' + parseOutput.properties[i].maxDate + '","default":"' + parseOutput.properties[i].defaultDate + '"'; 
+                            replacementText += '":{"type":"string","format":"date","default":"' + parseOutput.properties[i].defaultDate + '"'; 
+                        }
+                        replacementText += '}';
+                        if (i != parseOutput.properties.length - 1)
+                            replacementText += ',';
+                    }
+                    $finalOutput.value = JSON.stringify(JSON.parse(placeholderString.replace("placeholder", replacementText)),null,2);
+                });
+
+                function stringGenerator(currVal, strLen) {
+                    var str = currVal;
+                    for (var x = str.length; x < strLen; x++)
+                        str += '-';
+                    return str;
+                }
+                var $output = document.getElementById('output');
+                var $finalOutput = document.getElementById('finalOutput');
+                $output.value = '';
+                $finalOutput.value = '';
+            })();
+        </script>
+    </body>
+</html>

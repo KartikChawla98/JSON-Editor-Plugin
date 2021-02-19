@@ -1,0 +1,19 @@
+{
+    "folders": [
+        {
+            "path": "."
+        },
+        {
+            "path": "..\\json-plugin"
+        },
+        {
+            "path": "..\\json-editor"
+        },
+        {
+            "path": "..\\datahub-navbar"
+        }
+    ],
+    "settings": {
+        "liveServer.settings.multiRootWorkspaceName": "json-editor-min"
+    }
+}

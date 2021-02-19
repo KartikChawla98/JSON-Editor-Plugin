@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+        <script src="dist/jsoneditor.js"></script>
+        <script src="src/themes/bootstrap3.js"></script>
+    </head>
+    <body>
+        <div>
+            <div id="editor" class="container"></div>
+            <div class='row'>
+                <div class='span6 col-md-6 columns six large-6'>          
+                    <h2>JSON Editor Output</h2>     
+                    <textarea disabled id='output' style='width: 100%; height: 500px; font-family: monospace; color: red'></textarea>
+                </div>
+                <div class='span6 col-md-6 columns six large-6'>
+                    <h2>Final Schema Output</h2>
+                    <textarea disabled id='finalOutput' style='width: 100%; height: 500px; font-family: monospace; color: green'></textarea>
+                </div>
+            </div>
+        </div>
+        <script>
+            (function () {
+                var propertyCount = 0;
+                const element = document.getElementById('editor');
+                JSONEditor.defaults.languages.en.error_uniqueItems = "Properties should be unique";
+                const jsoneditor = new JSONEditor(element, {
+                    schema: {
+                        "title": "Plugin",
+                        "type": "object",
+                        "properties": {
+                            "properties": {
+                                "type": "array",
+                                "format": "tabs",
+                                "title": "Properties",
+                                "uniqueItems": "true",
+                                "items": {
+                                    "type": "object",
+                                    "title": "Property",
+                                    "oneOf": [
+                                        {
+                                            "title": "Custom Valued Property",
+                                            "properties": {
+                                                "minimum": {
+                                                    "type": "integer",
+                                                    "title": "Minimum Length or Value",
+                                                    "default": 1
+                                                },
+                                                "maximum": {
+                                                    "type": "integer",
+                                                    "title": "Maximum Length or Value",
+                                                    "default": 10
+                                                },
+                                                "default": {
+                                                    "type": "string",
+                                                    "title": "Default value"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "title": "Fixed Enum Property",
+                                            "properties": {
+                                                "enum": {
+                                                    "type": "array",
+                                                    "title": "Value Choices",
+                                                    "uniqueItems": "true",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "title": "Value"
+                                                    },
+                                                    "default": [""]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "title": "Name of Property"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "title": "Type of Property",
+                                            "enum": [
+                                                "string",
+                                                "integer"
+                                            ],
+                                            "default": "string"
+                                        },
+                                        "format": {
+                                            "type": "string",
+                                            "title": "Format of Property",
+                                            "enum": [
+                                                "textarea",
+                                                "number",
+                                            ],
+                                            "default": "textarea"
+                                        },
+                                    }
+                                },
+                                "default": 
+                                [
+                                    {
+
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    theme: 'bootstrap3',
+                    no_additional_properties: 'true',
+                    required_by_default: 'true',
+                    disable_collapse: 'true',
+                    disable_edit_json: 'true',
+                    disable_properties: 'true',
+                    disable_array_reorder: 'true',
+                    disable_array_delete_all_rows: 'true',
+                    disable_array_delete_last_row: 'true'
+                })
+
+                jsoneditor.on('change',function() {
+                    // if(jsoneditor.getEditor('root.properties.0.type').getValue() == 'string')
+                    //     jsoneditor.getEditor('root.properties.0.minimum').title.setValue('hi');
+
+                    var json = jsoneditor.getValue();
+                    $output.value = JSON.stringify(json,null,2);
+                    var parseOutput = JSON.parse($output.value);
+                    if (propertyCount != parseOutput.properties.length) {
+                        jsoneditor.getEditor('root.properties.' + (parseOutput.properties.length-1) + '.name').setValue('Property ' + parseOutput.properties.length);
+                        propertyCount = parseOutput.properties.length;
+                    }
+                    var placeholderString = '{"properties":{placeholder}}';
+                    var replacementText = '';
+                    for (var i = 0; i < parseOutput.properties.length; i++) {
+                        replacementText += '"' + parseOutput.properties[i].name + '":{"type":"' +  parseOutput.properties[i].type + '","format":"' + parseOutput.properties[i].format;
+                        if (parseOutput.properties[i].enum)
+                        {
+                            var placeholderEnumString = '","enum":[placeholderEnum]';
+                            var replacementEnumText = '';
+                            for (var j = 0; j < parseOutput.properties[i].enum.length; j++)
+                            {
+                                if (parseOutput.properties[i].type == 'integer') {
+                                    var parsedNumber = parseInt(parseOutput.properties[i].enum[j]) ? parseInt(parseOutput.properties[i].enum[j]) : 0;
+                                    jsoneditor.getEditor('root.properties.' + i + '.enum.' + j).setValue(parsedNumber);
+                                }
+                                replacementEnumText += '"' + parseOutput.properties[i].enum[j] + '"';
+                                if (j != parseOutput.properties[i].enum.length - 1) replacementEnumText += ',';
+                            }
+                            replacementText += placeholderEnumString.replace("placeholderEnum", replacementEnumText);
+                        }
+                        else {
+                            if (parseOutput.properties[i].type == 'integer') {
+                                var maxNumber = parseOutput.properties[i].maximum >= parseOutput.properties[i].minimum ? parseOutput.properties[i].maximum : parseOutput.properties[i].minimum + 1;
+                                jsoneditor.getEditor('root.properties.' + i + '.maximum').setValue(maxNumber);
+                                var parsedNumber = parseInt(parseOutput.properties[i].default) ? parseInt(parseOutput.properties[i].default) : 0;
+                                parsedNumber = parsedNumber >= parseOutput.properties[i].minimum ? parsedNumber : parseOutput.properties[i].minimum;
+                                parsedNumber = parsedNumber <= parseOutput.properties[i].maximum ? parsedNumber : parseOutput.properties[i].maximum;
+                                jsoneditor.getEditor('root.properties.' + i + '.default').setValue(parsedNumber);
+                                replacementText += '","minimum":"' + parseOutput.properties[i].minimum + '","maximum":"' + parseOutput.properties[i].maximum;
+                            }
+                            else if (parseOutput.properties[i].type == 'string') {
+                                var minNumber = parseOutput.properties[i].minimum >= 0 ? parseOutput.properties[i].minimum : 0;
+                                jsoneditor.getEditor('root.properties.' + i + '.minimum').setValue(minNumber);
+                                var maxNumber = parseOutput.properties[i].maximum >= parseOutput.properties[i].minimum ? parseOutput.properties[i].maximum : parseOutput.properties[i].minimum + 1;
+                                jsoneditor.getEditor('root.properties.' + i + '.maximum').setValue(maxNumber);
+                                replacementText += '","minLength":"' + parseOutput.properties[i].minimum + '","maxLength":"' + parseOutput.properties[i].maximum;
+                            } 
+                            replacementText += '","default":"' + parseOutput.properties[i].default + '"';
+                        }
+                        replacementText += '}';
+                        if (i != parseOutput.properties.length - 1)
+                            replacementText += ',';
+                    }
+                    $finalOutput.value = JSON.stringify(JSON.parse(placeholderString.replace("placeholder", replacementText)),null,2);
+                });
+
+                //jsoneditor.setValue({properties: [{},{},{"name": "B"}]});
+                // console.log(jsoneditor.getEditor('root.properties.0.name').setValue());
+                var $output = document.getElementById('output');
+                var $finalOutput = document.getElementById('finalOutput');
+                $output.value = '';
+                $finalOutput.value = '';
+            })();
+        </script>
+    </body>
+</html>
